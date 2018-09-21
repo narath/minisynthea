@@ -43,5 +43,10 @@ RSpec.describe Generator::CareManagement do
     expect(r.to_s).to match /well/
   end
 
+  it "has health confidence measures" do
+    g = Generator::CareManagement.new
+    expect(g.health_confidences.count).to be > 0
+  end
+
 end
 

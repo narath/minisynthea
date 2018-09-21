@@ -1,7 +1,7 @@
 require_relative "patient"
 
 class HealthConfidence 
-  attr_writer :patient, :value
+  attr_writer :patient, :value, :created_at
 
   def patient
     @patient ||= Patient.new
@@ -9,5 +9,9 @@ class HealthConfidence
 
   def value
     @value ||= Random.rand(11)
+  end
+  
+  def created_at
+    @created_at ||= Time.now
   end
 end

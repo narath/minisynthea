@@ -1,6 +1,7 @@
 require "csv"
 require_relative "../custom_field"
 require_relative "../encounter"
+require_relative "../health_confidence"
 require_relative "../need"
 require_relative "../organization"
 require_relative "../outreach"
@@ -9,7 +10,7 @@ require_relative "../person"
 
 module Generator
   class CareManagement
-  attr_reader :healthcare_orgs, :contacts, :social_service_orgs, :programs, :patients, :referrals, :outreaches, :custom_fields, :encounters
+  attr_reader :healthcare_orgs, :contacts, :social_service_orgs, :programs, :patients, :referrals, :outreaches, :custom_fields, :encounters, :health_confidences
 
   def initialize(patients: 100, healthcare_orgs: 2, social_service_orgs: 3, programs_per_social_service_org: 5, referrals_per_patient: 2, care_coordinators_per_healthcare_org: 4)
     # build a program
@@ -22,6 +23,7 @@ module Generator
     @outreaches = []
     @custom_fields = []
     @encounters = []
+    @health_confidences = []
 
     # care coordinators in healthcare orgnizations
     # working for patients
@@ -85,16 +87,27 @@ module Generator
     state = :well
     current_date = start_date
     last_state_started_at = current_date
+    is_enrolled = false
     days.times do |m|
       if !enrollment_complete and (number_of_tries<stop_after_x_tries)
         if (Random.rand < @prob_calling_this_unenrolled_patient_each_day)
           number_of_tries += 1
           enrollment_status = try_to_enroll(patient, care_coordinator, current_date)
-          states = managed_states if enrollment_status=="enrolled"
+          if is_enrolled = (enrollment_status=="enrolled")
+            states = managed_states
+          end
           enrollment_complete = ["enrolled", "declined"].include? enrollment_status
         end
       end
       result << state
+      if is_enrolled
+        hc = HealthConfidence.new
+        hc.patient = patient
+        hc.value = health_confidence_for_state(state)
+        hc.created_at = current_date
+        @health_confidences << hc
+      end
+
       transitions = states[state]
       if transitions
         prob_offset = 0
@@ -143,6 +156,21 @@ module Generator
     result
   end
 
+  def health_confidence_for_state(state)
+    case state
+    when :well
+      [5,6,7,8,9,10].sample
+    when :sick
+      [0,1,2,3,4,5].sample
+    when :ed
+      [0,1,2].sample
+    when :hospitalized
+      [0,1,2,3,4,5].sample
+    else
+      Random.rand(11)
+    end
+  end
+
   def try_to_enroll(patient, care_coordinator, current_date)
     outreach = Outreach.new
     outreach.patient = patient
@@ -176,6 +204,7 @@ module Generator
     File.open(File.join(dir,"custom_fields.csv"),"w") { |file| file << export_custom_fields }
     File.open(File.join(dir,"encounters.csv"),"w") { |file| file << export_encounters }
     File.open(File.join(dir,"outreaches.csv"),"w") { |file| file << export_outreaches }
+    File.open(File.join(dir,"assessments.csv"),"w") { |file| file << export_assessments }
   end
 
   def export_patients
@@ -240,6 +269,16 @@ module Generator
 			end
 		end
   end
+
+  def export_assessments
+    CSV.generate do |csv|
+      csv << %w(id patient_id assessment name value created_at)
+			@health_confidences.each do |c|
+        csv << [IdStore.instance.id, c.patient.id, "HealthConfidence", "health_confidence", c.value, c.created_at]
+			end
+		end
+  end
+
   end
 end
 
