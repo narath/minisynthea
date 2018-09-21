@@ -1,13 +1,14 @@
 require "csv"
-require_relative "custom_field"
-require_relative "encounter"
-require_relative "need"
-require_relative "organization"
-require_relative "outreach"
-require_relative "patient"
-require_relative "person"
+require_relative "../custom_field"
+require_relative "../encounter"
+require_relative "../need"
+require_relative "../organization"
+require_relative "../outreach"
+require_relative "../patient"
+require_relative "../person"
 
-class Generator
+module Generator
+  class CareManagement
   attr_reader :healthcare_orgs, :contacts, :social_service_orgs, :programs, :patients, :referrals, :outreaches, :custom_fields, :encounters
 
   def initialize(patients: 100, healthcare_orgs: 2, social_service_orgs: 3, programs_per_social_service_org: 5, referrals_per_patient: 2, care_coordinators_per_healthcare_org: 4)
@@ -238,6 +239,7 @@ class Generator
         csv << [c.id, c.patient.id, c.creator.id, c.created_at, c.tags, c.unable_to_reach, c.minutes_spent]
 			end
 		end
+  end
   end
 end
 
