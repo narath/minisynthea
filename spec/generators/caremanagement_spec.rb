@@ -48,5 +48,9 @@ RSpec.describe Generator::CareManagement do
     expect(g.health_confidences.count).to be > 0
   end
 
+  it "has what matters" do
+    g = Generator::CareManagement.new
+    expect(g.whatmattersindex.count).to be > 2
+  end
 end
 

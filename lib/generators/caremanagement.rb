@@ -7,12 +7,16 @@ require_relative "../organization"
 require_relative "../outreach"
 require_relative "../patient"
 require_relative "../person"
+require_relative "../what_matters_index"
 
 module Generator
   class CareManagement
-  attr_reader :healthcare_orgs, :contacts, :social_service_orgs, :programs, :patients, :referrals, :outreaches, :custom_fields, :encounters, :health_confidences
+  attr_reader :healthcare_orgs, :contacts, :social_service_orgs, :programs, :patients, :referrals, :outreaches, :custom_fields, :encounters, :health_confidences, :whatmattersindex
 
-  def initialize(patients: 100, healthcare_orgs: 2, social_service_orgs: 3, programs_per_social_service_org: 5, referrals_per_patient: 2, care_coordinators_per_healthcare_org: 4)
+  def initialize(patients: 100, healthcare_orgs: 2, social_service_orgs: 3, programs_per_social_service_org: 5, referrals_per_patient: 2, care_coordinators_per_healthcare_org: 4, days: 365)
+    # set params
+    @days = days
+
     # build a program
     @healthcare_orgs = []
     @contacts = []
@@ -24,6 +28,7 @@ module Generator
     @custom_fields = []
     @encounters = []
     @health_confidences = []
+    @whatmattersindex = []
 
     # care coordinators in healthcare orgnizations
     # working for patients
@@ -53,8 +58,7 @@ module Generator
   end
 
   def travels_on_a_health_journey(patient)
-    days = 30
-    start_date = Date.today.prev_day(days)
+    start_date = Date.today.prev_day(@days)
     states = {
       well: [ [0.8, :well], [0.2, :sick] ],
       sick: [ [0.4, :well], [0.4, :sick], [0.2, :ed] ],
@@ -88,7 +92,7 @@ module Generator
     current_date = start_date
     last_state_started_at = current_date
     is_enrolled = false
-    days.times do |m|
+    @days.times do |m|
       if !enrollment_complete and (number_of_tries<stop_after_x_tries)
         if (Random.rand < @prob_calling_this_unenrolled_patient_each_day)
           number_of_tries += 1
@@ -106,6 +110,18 @@ module Generator
         hc.value = health_confidence_for_state(state)
         hc.created_at = current_date
         @health_confidences << hc
+
+        if (m % 30)==0
+          wmi = WhatMattersIndex.new
+          wmi.patient = patient
+          wmi.confidence = hc.value
+          wmi.pain = pain_for_state(state)
+          wmi.emotions  = emotions_for_state(state)
+          wmi.meds = [4,5,6,7,8].sample
+          wmi.adverse_effects = adverse_effects(wmi.meds,state)
+          wmi.created_at = current_date
+          @whatmattersindex << wmi
+        end
       end
 
       transitions = states[state]
@@ -169,6 +185,32 @@ module Generator
     else
       Random.rand(11)
     end
+  end
+
+  def pain_for_state(state)
+    case state
+    when :well
+      ["Moderate pain","Mild pain", "Very mild pain", "No pain"].sample
+    when :sick
+      ["Extreme pain", "Moderate pain", "Mild pain"].sample
+    when
+      WhatMattersIndex.new.pain
+    end
+  end
+
+  def emotions_for_state(state)
+    case state
+    when :well
+      ["Somewhat", "A little", "Not at all"].sample
+    when :sick
+      ["Extremely","Quite a bit", "Somewhat"].sample
+    else
+      WhatMattersIndex.new.emotions
+    end
+  end
+
+  def adverse_effects(meds, state)
+    WhatMattersIndex.new.adverse_effects
   end
 
   def try_to_enroll(patient, care_coordinator, current_date)
@@ -276,6 +318,14 @@ module Generator
 			@health_confidences.each do |c|
         csv << [IdStore.instance.id, c.patient.id, "HealthConfidence", "health_confidence", c.value, c.created_at]
 			end
+      @whatmattersindex.each do |c|
+        csv << [IdStore.instance.id, c.patient.id, "What Matters Index", "confidence", c.confidence, c.created_at]
+        csv << [IdStore.instance.id, c.patient.id, "What Matters Index", "pain", c.pain, c.created_at]
+        csv << [IdStore.instance.id, c.patient.id, "What Matters Index", "emotions", c.emotions, c.created_at]
+        csv << [IdStore.instance.id, c.patient.id, "What Matters Index", "meds", c.meds, c.created_at]
+        csv << [IdStore.instance.id, c.patient.id, "What Matters Index", "adverse_effects", c.adverse_effects, c.created_at]
+        csv << [IdStore.instance.id, c.patient.id, "What Matters Index", "score", c.score, c.created_at]
+      end
 		end
   end
 

@@ -25,7 +25,7 @@ end
 raise "Directory #{output_dir} does not exist." unless Dir.exist?(output_dir)
 
 instance = Object.const_get(g)
-instance.new.export(output_dir)
+instance.new(patients: 1000).export(output_dir)
 puts "Generation completed."
 
 
