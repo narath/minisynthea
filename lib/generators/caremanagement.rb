@@ -50,9 +50,29 @@ module Generator
       end
     end
 
+    social_service_orgs.times do
+      org = SocialServicesOrganization.new
+      @social_service_orgs << org
+
+      programs_per_social_service_org.times do
+        program = Program.new
+        program.organization = org
+        @programs << program
+      end
+    end
+
     patients.times do
       patient = Patient.new
       @patients << patient
+
+      referrals_per_patient.times do
+        referral = Referral.new
+        referral.patient = patient
+        referral.program = @programs.sample
+        referral.created_by = @contacts.sample
+        @referrals << referral
+      end
+
       travels_on_a_health_journey patient
     end
   end
