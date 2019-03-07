@@ -22,10 +22,16 @@ else
   output_dir = Dir.pwd
 end
 
+if ARGV.count==3
+  count = ARGV[2].to_i
+else
+  count = 1000
+end
+
 raise "Directory #{output_dir} does not exist." unless Dir.exist?(output_dir)
 
 instance = Object.const_get(g)
-instance.new(patients: 1000).export(output_dir)
+instance.new(patients: count).export(output_dir)
 puts "Generation completed."
 
 

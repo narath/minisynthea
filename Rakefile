@@ -1,5 +1,7 @@
-task :rebuild do
-  print "Are you sure you want to rebuild the cmm database?(y or n) "
+task :build, [:db_name] do |t, args|
+  puts args
+  db_name = args[:db_name] || "cmm"
+  print "Are you sure you want to rebuild the #{db_name} database?(y or n) "
   answer = $stdin.gets
   unless answer =~ /y|Y/ 
     puts "Aborting." 
@@ -7,8 +9,8 @@ task :rebuild do
   end
   sql_dir = File.join(Dir.pwd,"lib/tasks")
   puts "Recreating database"
-  `psql -c 'DROP DATABASE cmm' -c 'CREATE DATABASE cmm'`
+  `psql -c 'DROP DATABASE #{db_name}' -c 'CREATE DATABASE #{db_name}'`
   puts "Adding in the datafiles"
-  `psql -d cmm -c '\\i #{File.join(sql_dir, "create_table.sql")}' -c '\\i #{File.join(sql_dir, "copy.sql")}'`
+  `psql -d #{db_name} -c '\\i #{File.join(sql_dir, "create_table.sql")}' -c '\\i #{File.join(sql_dir, "copy.sql")}'`
 end
 
