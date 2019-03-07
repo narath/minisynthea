@@ -16,7 +16,7 @@ end
 g = generator[ARGV[0].to_sym]
 raise "Script #{ARGV[0]} not found. I only know about #{generator.keys.join(',')}" if !g
 
-if ARGV.count==2
+if ARGV.count>=2
   output_dir = ARGV[1]
 else
   output_dir = Dir.pwd
