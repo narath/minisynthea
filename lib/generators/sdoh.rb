@@ -31,6 +31,7 @@ module Generator
         @contacts << person
       end
     end
+
     social_service_orgs.times do
       org = SocialServicesOrganization.new
       @social_service_orgs << org
