@@ -77,9 +77,13 @@ module Generator
     end
   end
 
+  def log(msg)
+    $stderr.puts msg
+  end
+
   def travels_on_a_health_journey(patient)
     start_date = Date.today.prev_day(@days)
-    states = {
+    default_states = {
       well: [ [0.8, :well], [0.2, :sick] ],
       sick: [ [0.4, :well], [0.4, :sick], [0.2, :ed] ],
       ed: [ [0.7, :hospitalized], [0.2, :sick], [0.1, :well] ],
@@ -97,6 +101,50 @@ module Generator
       readmitted: [ [0.9, :hospitalized] , [0.1, :discharged] ]
     }
   
+    homeless_states = {
+      well: [ [0.5, :well], [0.5, :sick] ],
+      sick: [ [0.3, :well], [0.4, :sick], [0.3, :ed] ],
+      ed: [ [0.8, :hospitalized], [0.2, :sick] ],
+      hospitalized: [ [0.9, :hospitalized], [0.1, :discharged] ],
+      discharged: [ [0.5, :readmitted], [0.4, :sick], [0.1, :well] ],
+      readmitted: [ [0.9, :hospitalized] , [0.1, :discharged] ]
+    }
+
+    managed_homeless_states = {
+      well: [ [0.6, :well], [0.4, :sick] ],
+      sick: [ [0.4, :well], [0.4, :sick], [0.2, :ed] ],
+      ed: [ [0.7, :hospitalized], [0.2, :sick], [0.1, :well] ],
+      hospitalized: [ [0.8, :hospitalized], [0.2, :discharged] ],
+      discharged: [ [0.4, :readmitted], [0.4, :sick], [0.2, :well] ],
+      readmitted: [ [0.8, :hospitalized] , [0.2, :discharged] ]
+    }
+
+    food_insecurity_states = {
+      well: [ [0.6, :well], [0.4, :sick] ],
+      sick: [ [0.2, :well], [0.55, :sick], [0.25, :ed] ],
+      ed: [ [0.7, :hospitalized], [0.2, :sick], [0.1, :well] ],
+      hospitalized: [ [0.8, :hospitalized], [0.2, :discharged] ],
+      discharged: [ [0.3, :readmitted], [0.3, :sick], [0.4, :well] ],
+      readmitted: [ [0.9, :hospitalized] , [0.1, :discharged] ]
+    }
+
+    managed_food_insecurity_states = {
+      well: [ [0.7, :well], [0.3, :sick] ],
+      sick: [ [0.25, :well], [0.55, :sick], [0.2, :ed] ],
+      ed: [ [0.7, :hospitalized], [0.2, :sick], [0.1, :well] ],
+      hospitalized: [ [0.8, :hospitalized], [0.2, :discharged] ],
+      discharged: [ [0.3, :readmitted], [0.3, :sick], [0.4, :well] ],
+      readmitted: [ [0.8, :hospitalized] , [0.2, :discharged] ]
+    }
+
+    @homelessness_rate = 0.10
+    @prob_of_getting_housed_per_day = 365/100/180
+    @prob_of_getting_housed_per_day_managed = 365/100/100
+
+    @food_insecurity_rate = 0.20
+    @prob_of_getting_food_support_per_day = 365/100/30
+    @prob_of_getting_food_support_per_day_managed = 365/100/5
+
     # can we reach this patient and will they enroll
     @prob_calling_this_unenrolled_patient_each_day = 0.1
     @prob_patient_is_reachable = 0.7
@@ -112,13 +160,34 @@ module Generator
     current_date = start_date
     last_state_started_at = current_date
     is_enrolled = false
+    is_homeless = Random.rand < @homelessness_rate
+    is_food_insecure = Random.rand < @food_insecurity_rate
+    at_risk_for_food_insecurity = is_food_insecure
+
+    if is_homeless
+      states = homeless_states
+      add_custom_field(patient, "homeless", "true", current_date)
+    elsif is_food_insecure
+      states = food_insecurity_states
+      add_custom_field(patient, "food_insecure", "true", current_date)
+    else
+      states = default_states
+    end
+
     @days.times do |m|
       if !enrollment_complete and (number_of_tries<stop_after_x_tries)
         if (Random.rand < @prob_calling_this_unenrolled_patient_each_day)
           number_of_tries += 1
           enrollment_status = try_to_enroll(patient, care_coordinator, current_date)
           if is_enrolled = (enrollment_status=="enrolled")
-            states = managed_states
+            # on_enrollment
+            if is_homeless
+              states = managed_homeless_states
+            elsif is_food_insecure
+              states = managed_food_insecurity_states
+            else
+              states = managed_states
+            end
           end
           enrollment_complete = ["enrolled", "declined"].include? enrollment_status
         end
@@ -141,6 +210,54 @@ module Generator
           wmi.adverse_effects = adverse_effects(wmi.meds,state)
           wmi.created_at = current_date
           @whatmattersindex << wmi
+        end
+      end
+
+      # if the patient is homeless, have they found housing
+      if is_homeless
+        if is_enrolled
+          if (Random.rand < @prob_of_getting_housed_per_day_managed)
+            add_custom_field(patient, "homeless", "false", current_date)
+            is_homeless = false
+            if is_food_insecure
+              states = managed_food_insecurity_states
+            else
+              states = managed_states
+            end
+          end
+        else
+          if (Random.rand < @prob_of_getting_housed_per_day)
+            is_homeless = false
+            add_custom_field(patient, "homeless", "false", current_date)
+            if is_food_insecure
+              states = food_insecurity_states
+            else
+              states = default_states
+            end
+          end
+        end
+      end
+
+      # if at risk for food insecurity then they can become food insecure
+      if !is_food_insecure && at_risk_for_food_insecurity
+        is_food_insecure = (Random.rand < @food_insecurity_rate)
+        add_custom_field(patient, "food_insecure", "true", current_date) if is_food_insecure
+      end
+
+      # if the patient is food insecure, do they have food access
+      if is_food_insecure
+        if is_enrolled
+          if (Random.rand < @prob_of_getting_food_support_per_day_managed)
+            is_food_insecure = false
+            add_custom_field(patient, "food_insecure", "false", current_date)
+            states = managed_states
+          end
+        else
+          if (Random.rand < @prob_of_getting_food_support_per_day)
+            is_food_insecure = false
+            add_custom_field(patient, "food_insecure", "false", current_date)
+            states = default_states
+          end
         end
       end
 
@@ -255,6 +372,16 @@ module Generator
     end
     result
   end
+
+  def add_custom_field(patient, name, value, current_date)
+      cf = CustomField.new
+      cf.patient = patient
+      cf.created_at = current_date
+      cf.name = name
+      cf.value = value
+      @custom_fields << cf
+  end
+
 
   # export these to csv delimited files
   def export(dir = Dir.pwd)
