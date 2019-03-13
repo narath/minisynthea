@@ -6,7 +6,7 @@ require_relative "organization"
 class Program
   attr_writer :id, :name, :organization
 
-  def initialize(location = "Utah", need = NEEDS.sample)
+  def initialize(location = "Pennsylvania", need = NEEDS.sample)
     @default_prefix = "#{location} #{need.split(">").last} Support"
   end
 

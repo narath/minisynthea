@@ -147,8 +147,8 @@ module Generator
 
     # can we reach this patient and will they enroll
     @prob_calling_this_unenrolled_patient_each_day = 0.1
-    @prob_patient_is_reachable = 0.7
-    @prob_patient_enrolls = 0.6
+    @prob_patient_is_reachable = 0.2
+    @prob_patient_enrolls = 0.65
     enrollment_complete = false
     number_of_tries = 0
     stop_after_x_tries = 3
@@ -305,6 +305,11 @@ module Generator
         break
       end
       current_date = current_date.next_day
+    end
+    if is_homeless
+      patient.housing_status = "Homeless" 
+    else
+      patient.housing_status = "Housed"
     end
     result
   end

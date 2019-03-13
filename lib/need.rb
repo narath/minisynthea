@@ -6,9 +6,9 @@ NEEDS = [
  "Education > Basic Literacy > Daily Life Skills",
  "Food > Emergency Food",
  "Food > Food Delivery",
- "Goods > Clothing > Baby Clothes",
- "Goods > Clothing > Clothes for School",
  "Health > Health Education > Daily Life Skills",
- "Health > Health Education > Disease Management"
+ "Health > Health Education > Disease Management",
+ "Housing > Housing Support > Vouchers",
+ "Housing > Housing Support > Maintenance"
 ]
 
