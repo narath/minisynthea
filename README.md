@@ -11,7 +11,7 @@ Patients with certain demographic characteristics and attributes:
 * can be reached at a certain rate
 * are willing to be enrolled in programs at a particular rate
 
-When they are enrolled in a particular program you can then change the probabilities to reflect mesaures or expected benefits.
+When they are enrolled in a particular program you can then change the probabilities to reflect measures or expected benefits.
 
 Patients transition between particular states at the probabilities defined by your state machine. 
 
