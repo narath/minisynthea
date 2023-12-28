@@ -1,12 +1,13 @@
 require "csv"
-require_relative "need"
-require_relative "organization"
-require_relative "patient"
-require_relative "person"
-require_relative "program"
-require_relative "referral"
+require_relative "../need"
+require_relative "../organization"
+require_relative "../patient"
+require_relative "../person"
+require_relative "../program"
+require_relative "../referral"
 
-class Generator
+module Generator
+  class SDOH
   attr_reader :healthcare_orgs, :contacts, :social_service_orgs, :programs, :patients, :referrals
 
   def initialize(patients: 100, healthcare_orgs: 2, social_service_orgs: 3, programs_per_social_service_org: 5, referrals_per_patient: 2, care_coordinators_per_healthcare_org: 4)
@@ -30,6 +31,7 @@ class Generator
         @contacts << person
       end
     end
+
     social_service_orgs.times do
       org = SocialServicesOrganization.new
       @social_service_orgs << org
@@ -98,6 +100,7 @@ class Generator
         csv << [c.id, c.name, c.role, c.organization.name]
 			end
 		end
+  end
   end
 end
 

@@ -1,7 +1,9 @@
 require "faker"
 require_relative "id_store"
+require_relative "zipcodes"
 
 class Patient
+  attr_writer :housing_status
 
   def id
     @id ||= IdStore.instance.id
@@ -40,7 +42,8 @@ class Patient
   end
 
   def zip_code
-    @zip_code ||= Faker::Address.zip_code
+    # @zip_code ||= Faker::Address.zip_code
+    @zip_code ||= Zipcodes::Pennsylvania.sample
   end
 
   def housing_status

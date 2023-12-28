@@ -10,7 +10,7 @@ class Referral
   attr_writer :id, :patient, :need, :program, :status, :created_at, :created_by, :updated_at, :updated_by, :accepted_at, :declined_at, :withdrawn_at
 
   def id
-    IdStore.instance.id
+    @id ||= IdStore.instance.id
   end
 
   def patient
